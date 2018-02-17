@@ -2,23 +2,29 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	// "github.com/sunmyinf/workplacehub/handler"
 )
 
 const textMessageType int = 1
 
+var addr = flag.String("address", "localhost:8010", "setting of server address")
+var chanNum = flag.Int("chanNum", 4, "number of buffer of channel between callback and echo")
 var upgrader = websocket.Upgrader{}
 
 func main() {
-	msgChan := make(chan []byte, 4)
+	flag.Parse()
+	msgChan := make(chan []byte, *chanNum)
 
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
 		bufBody := new(bytes.Buffer)
-		bufBody.ReadFrom(req.Body)
+		if _, err := bufBody.ReadFrom(req.Body); err != nil {
+			log.Printf("callback err: %v\n", err)
+			return
+		}
 
 		msgChan <- bufBody.Bytes()
 	})
@@ -27,18 +33,18 @@ func main() {
 	http.HandleFunc("/echo", func(w http.ResponseWriter, req *http.Request) {
 		c, err := upgrader.Upgrade(w, req, nil)
 		if err != nil {
-			log.Printf("upgrade: %v", err)
+			log.Printf("upgrade: %v\n", err)
 			return
 		}
 		defer c.Close()
 
 		for msg := range msgChan {
 			if err = c.WriteMessage(textMessageType, msg); err != nil {
-				log.Println("write: %v", err)
+				log.Printf("write: %v\n", err)
 				break
 			}
 		}
 	})
 
-	http.ListenAndServe("localhost:8010", nil)
+	http.ListenAndServe(*addr, nil)
 }
