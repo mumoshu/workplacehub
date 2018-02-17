@@ -11,12 +11,13 @@ import (
 
 const textMessageType int = 1
 
-var addr = flag.String("address", "localhost:8010", "setting of server address")
-var chanNum = flag.Int("chanNum", 4, "number of buffer of channel between callback and echo")
 var upgrader = websocket.Upgrader{}
 
 func main() {
+	port := flag.String("port", "8010", "port number")
+	chanNum := flag.Int("chanNum", 4, "number of buffer of channel between callback and echo")
 	flag.Parse()
+
 	msgChan := make(chan []byte, *chanNum)
 
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
@@ -29,7 +30,7 @@ func main() {
 		msgChan <- bufBody.Bytes()
 	})
 
-	// websocket通信側のendpoint
+	// endpoint for web socket connection
 	http.HandleFunc("/echo", func(w http.ResponseWriter, req *http.Request) {
 		c, err := upgrader.Upgrade(w, req, nil)
 		if err != nil {
@@ -46,5 +47,7 @@ func main() {
 		}
 	})
 
-	http.ListenAndServe(*addr, nil)
+	if err := http.ListenAndServe(":"+*port, nil); err != nil {
+		log.Panicf("Failed to launch server: %v", err)
+	}
 }
