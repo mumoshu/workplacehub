@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/sunmyinf/workplacehub/handler"
+	// "github.com/sunmyinf/workplacehub/handler"
 )
 
 const textMessageType int = 1
@@ -12,13 +14,16 @@ const textMessageType int = 1
 var upgrader = websocket.Upgrader{}
 
 func main() {
-	msgChan := make(chan string, 4)
+	msgChan := make(chan []byte, 4)
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Reqest) {
+	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
+		bufBody := new(bytes.Buffer)
+		bufBody.ReadFrom(req.Body)
 
+		msgChan <- bufBody.Bytes()
 	})
 
-	// websocket通信側のAPI
+	// websocket通信側のendpoint
 	http.HandleFunc("/echo", func(w http.ResponseWriter, req *http.Request) {
 		c, err := upgrader.Upgrade(w, req, nil)
 		if err != nil {
@@ -28,11 +33,12 @@ func main() {
 		defer c.Close()
 
 		for msg := range msgChan {
-			err = c.WriteMessage(mt, msg)
-			if err != nil {
+			if err = c.WriteMessage(textMessageType, msg); err != nil {
 				log.Println("write: %v", err)
 				break
 			}
 		}
 	})
+
+	http.ListenAndServe("localhost:8010", nil)
 }
