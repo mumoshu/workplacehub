@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sunmyinf/workplacehub/decode"
+	"github.com/sunmyinf/workplacehub/workplace"
 )
 
 const textMessageType int = 1
@@ -22,7 +23,8 @@ func main() {
 
 	msgChan := make(chan []byte, *chanNum)
 
-	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
+	ws := workplace.NewWebhookServer("app secret", "access token", "verify token")
+	ws.HandleFunc(workplace.HookTYpeGroups, func(w http.ResponseWriter, req *http.Request) {
 		bufBody := new(bytes.Buffer)
 		if _, err := bufBody.ReadFrom(req.Body); err != nil {
 			log.Printf("callback err: %v\n", err)
