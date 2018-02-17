@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"flag"
+	"json"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/sunmyinf/workplacehub/decode"
 )
 
 const textMessageType int = 1
@@ -27,6 +29,13 @@ func main() {
 			return
 		}
 
+		group := decode.Group{}
+		if err := json.Unmarshal(bufBody, &group); err != nil {
+			log.Printf("json unmarshal error: %v")
+			return
+		}
+
+		// send post's or comment's message
 		msgChan <- bufBody.Bytes()
 	})
 
