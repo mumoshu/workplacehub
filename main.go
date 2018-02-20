@@ -50,6 +50,11 @@ func main() {
 		}
 	})
 
+	ws.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		return
+	})
+
 	if err := ws.ListenAndServe(":" + *port); err != nil {
 		log.Panicf("failed to launch server: %v", err)
 	}
