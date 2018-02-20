@@ -1,15 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"flag"
-	"json"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/sunmyinf/workplacehub/decode"
-	"github.com/sunmyinf/workplacehub/workplace"
+	"github.com/sunmyinf/go-workplace/decode"
+	"github.com/sunmyinf/go-workplace/webhook"
 )
 
 const textMessageType int = 1
@@ -21,28 +19,21 @@ func main() {
 	chanNum := flag.Int("chanNum", 4, "number of buffer of channel between callback and echo")
 	flag.Parse()
 
-	msgChan := make(chan []byte, *chanNum)
+	msgChan := make(chan string, *chanNum)
 
-	ws := workplace.NewWebhookServer("app secret", "access token", "verify token")
-	ws.HandleFunc(workplace.HookTYpeGroups, func(w http.ResponseWriter, req *http.Request) {
-		bufBody := new(bytes.Buffer)
-		if _, err := bufBody.ReadFrom(req.Body); err != nil {
-			log.Printf("callback err: %v\n", err)
-			return
-		}
+	appSecret := os.Getenv("WORKPLACE_APP_SECRET")
+	accessToken := os.Getenv("WORKPLACE_ACCESS_TOKEN")
+	verifyToken := os.Getenv("WORKPLACE_VERIFY_TOKEN")
 
-		group := decode.Group{}
-		if err := json.Unmarshal(bufBody, &group); err != nil {
-			log.Printf("json unmarshal error: %v")
-			return
-		}
-
+	ws := webhook.NewServer(appSecret, accessToken, verifyToken)
+	ws.HandleObjectFunc(decode.ObjectGroup, func(rb decode.RequestBody) error {
 		// send post's or comment's message
-		msgChan <- bufBody.Bytes()
+		msgChan <- string(rb.Data[0].Object)
+		return nil
 	})
 
 	// endpoint for web socket connection
-	http.HandleFunc("/echo", func(w http.ResponseWriter, req *http.Request) {
+	ws.HandleFunc("/echo", func(w http.ResponseWriter, req *http.Request) {
 		c, err := upgrader.Upgrade(w, req, nil)
 		if err != nil {
 			log.Printf("upgrade: %v\n", err)
@@ -51,14 +42,14 @@ func main() {
 		defer c.Close()
 
 		for msg := range msgChan {
-			if err = c.WriteMessage(textMessageType, msg); err != nil {
+			if err = c.WriteMessage(textMessageType, []byte(msg)); err != nil {
 				log.Printf("write: %v\n", err)
 				break
 			}
 		}
 	})
 
-	if err := http.ListenAndServe(":"+*port, nil); err != nil {
-		log.Panicf("Failed to launch server: %v", err)
+	if err := ws.ListenAndServe(":" + *port); err != nil {
+		log.Panicf("failed to launch server: %v", err)
 	}
 }

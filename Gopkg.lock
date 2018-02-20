@@ -7,9 +7,24 @@
   revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
   version = "v1.2.0"
 
+[[projects]]
+  name = "github.com/guregu/null"
+  packages = ["."]
+  revision = "e81d6d8d57747b34d7c5fe0d20ebf57692f04ea9"
+  version = "v3.3.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sunmyinf/go-workplace"
+  packages = [
+    "decode",
+    "webhook"
+  ]
+  revision = "b881a17218d7ee0435367ef6c961c0cb4d24f619"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "941e8dbe52e16e8a7dff4068b7ba53ae69a5748b29fbf2bcb5df3a063ac52261"
+  inputs-digest = "4d05924f2c5da38b8540ebd223cf03c7f7f9f44f1aa7de0ebf303e87f1700a35"
   solver-name = "gps-cdcl"
   solver-version = 1
