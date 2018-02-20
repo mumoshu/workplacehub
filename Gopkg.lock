@@ -20,7 +20,7 @@
     "decode",
     "webhook"
   ]
-  revision = "b881a17218d7ee0435367ef6c961c0cb4d24f619"
+  revision = "a29386937a3d7aadd20ee518cf3acebfbf1c81fa"
 
 [solve-meta]
   analyzer-name = "dep"
